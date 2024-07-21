@@ -12,7 +12,7 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>()
     .AddEntityFrameworkStores<UserDbContext>();
-
+builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -21,7 +21,9 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
+app.MapControllers();
 app.MapIdentityApi<User>();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
