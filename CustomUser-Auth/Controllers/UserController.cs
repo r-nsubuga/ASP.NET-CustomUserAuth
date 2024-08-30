@@ -27,8 +27,6 @@ public class UserController: ControllerBase
             {
                 UserName = model.Email,
                 Email = model.Email,
-                FirstName = model.FirstName,
-                LastName = model.LastName
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -41,6 +39,62 @@ public class UserController: ControllerBase
         }
 
         return BadRequest(ModelState);
+    }
+
+    [HttpPost("createNormalUser")]
+    public async Task<IActionResult> CreateNormalUser([FromBody] NormalUser normalUser)
+    {
+        if (ModelState.IsValid)
+        {
+            var user = new NormalUser()
+            {
+                UserName = normalUser.Email,
+                Email = normalUser.Email,
+                FirstName = normalUser.FirstName,
+                LastName = normalUser.LastName,
+                PhoneNumber = normalUser.PhoneNumber,
+            };
+            var result = await _userManager.CreateAsync(user, normalUser.PasswordHash);
+            if (result.Succeeded)
+            {
+                await _signInManager.SignInAsync(user, isPersistent: false);
+                return Ok();
+            }
+            return BadRequest(result.Errors);
+        }
+        return BadRequest(ModelState);
+    }
+    
+    [HttpPost("createBusinessUser")]
+    public async Task<IActionResult> CreateBusinessUser([FromBody] BusinessUser businessUser)
+    {
+        if (ModelState.IsValid)
+        {
+            var user = new BusinessUser()
+            {
+                UserName = businessUser.Email,
+                Email = businessUser.Email,
+                BusinessName = businessUser.BusinessName,
+                BusinessRegistrationNumber = businessUser.BusinessRegistrationNumber,
+                Location = businessUser.Location,
+                PhoneNumber = businessUser.ContactNumber,
+            };
+            var result = await _userManager.CreateAsync(user, businessUser.PasswordHash);
+            if (result.Succeeded)
+            {
+                await _signInManager.SignInAsync(user, isPersistent: false);
+                return Ok();
+            }
+            return BadRequest(result.Errors);
+        }
+        return BadRequest(ModelState);
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(string email, string password)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        return Ok();
     }
 
 }
