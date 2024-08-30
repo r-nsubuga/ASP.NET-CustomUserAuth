@@ -91,10 +91,18 @@ public class UserController: ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(string email, string password)
+    public async Task<IActionResult> Login(string email,string password)
     {
         var user = await _userManager.FindByEmailAsync(email);
-        return Ok();
+        if (user == null)
+        {
+            return NotFound(new { message = "Account doesn't exist." });
+        }
+        var flag= await _userManager.CheckPasswordAsync(user, password);
+        if (flag)
+        {
+            return Ok(user);
+        }
+        return NotFound(new { message = "Wrong credentials" });
     }
-
 }
