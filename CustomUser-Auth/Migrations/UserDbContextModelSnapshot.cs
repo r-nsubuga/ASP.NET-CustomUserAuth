@@ -233,8 +233,17 @@ namespace CustomUser_Auth.Migrations
                     b.Property<string>("ContactNumber")
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("Location")
                         .HasColumnType("longtext");
+
+                    b.Property<int?>("VendorType")
+                        .HasColumnType("int");
 
                     b.ToTable("BusinessUsers", (string)null);
                 });
@@ -245,6 +254,9 @@ namespace CustomUser_Auth.Migrations
 
                     b.Property<string>("FirstName")
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("LastName")
                         .HasColumnType("longtext");

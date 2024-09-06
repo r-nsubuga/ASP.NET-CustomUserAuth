@@ -98,11 +98,28 @@ public class UserController: ControllerBase
         {
             return NotFound(new { message = "Account doesn't exist." });
         }
-        var flag= await _userManager.CheckPasswordAsync(user, password);
-        if (flag)
+        
+        var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
+        Console.WriteLine(result.Succeeded);
+        if (result.Succeeded)
         {
             return Ok(user);
         }
+
+        if (result.IsLockedOut)
+        {
+            return Problem("The account is locked out");
+        }
+
+        await _userManager.AccessFailedAsync(user);
+
         return NotFound(new { message = "Wrong credentials" });
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        await _signInManager.SignOutAsync();
+        return Ok(true);
     }
 }
