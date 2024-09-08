@@ -1,4 +1,5 @@
 using CustomUser_Auth.Dtos;
+using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,11 +12,14 @@ public class UserController: ControllerBase
 {
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
+    private readonly TokenService _tokenService;
 
-    public UserController(UserManager<User> userManager, SignInManager<User> signInManager)
+    public UserController(UserManager<User> userManager, SignInManager<User> signInManager, 
+        TokenService tokenService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _tokenService = tokenService;
     }
     
     [HttpPost("register")]
@@ -103,7 +107,13 @@ public class UserController: ControllerBase
         Console.WriteLine(result.Succeeded);
         if (result.Succeeded)
         {
-            return Ok(user);
+            var token = _tokenService.GenerateJwtToken(user);
+            var response = new LoginResponse
+            {
+                Token = token,
+                User = user,
+            };
+            return Ok(response);
         }
 
         if (result.IsLockedOut)
