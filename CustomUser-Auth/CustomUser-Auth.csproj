@@ -9,6 +9,8 @@
 
     <ItemGroup>
         <PackageReference Include="dotenv.net" Version="3.2.0" />
+        <PackageReference Include="Google.Apis.Auth.AspNetCore3" Version="1.69.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.13" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.8" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.7"/>

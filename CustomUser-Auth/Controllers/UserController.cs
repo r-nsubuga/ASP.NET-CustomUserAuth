@@ -1,13 +1,15 @@
 using CustomUser_Auth.Dtos;
 using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CustomUser_Auth.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+//[Route("api/[controller]")]
 public class UserController: ControllerBase
 {
     private readonly UserManager<User> _userManager;
@@ -110,7 +112,7 @@ public class UserController: ControllerBase
             var token = _tokenService.GenerateJwtToken(user);
             var response = new LoginResponse
             {
-                Token = token,
+                AccessToken = token,
                 User = user,
             };
             return Ok(response);
@@ -131,5 +133,33 @@ public class UserController: ControllerBase
     {
         await _signInManager.SignOutAsync();
         return Ok(true);
+    }
+    
+    //With Google Auth 
+    [HttpGet("loginWithGoogle")]
+    public IActionResult GoogleLogin()
+    {
+        var redirectUrl = Url.Action(nameof(GoogleResponse), "User", null, Request.Scheme);
+        return Challenge(new AuthenticationProperties { RedirectUri = redirectUrl }, GoogleDefaults.AuthenticationScheme);
+    }
+
+    [HttpGet("signin-google")]
+    public async Task<IActionResult> GoogleResponse()
+    {
+        var authenticateResult = await HttpContext.AuthenticateAsync();
+        if (!authenticateResult.Succeeded)
+            return BadRequest();
+
+        var claims = authenticateResult.Principal.Identities
+            .FirstOrDefault()?.Claims.Select(c => new { c.Type, c.Value });
+
+        return Ok(claims);
+    }
+
+    [HttpPost("logoutFromGoogleAuth")]
+    public async Task<IActionResult> LogoutFromGoogleAuth()
+    {
+        await HttpContext.SignOutAsync();
+        return Ok();
     }
 }
