@@ -3,7 +3,7 @@ using CustomUser_Auth.Dtos;
 using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Google;
+//using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,13 +16,15 @@ public class UserController: ControllerBase
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly TokenService _tokenService;
+    private readonly GoogleAuthService _googleAuthService;
 
     public UserController(UserManager<User> userManager, SignInManager<User> signInManager, 
-        TokenService tokenService)
+        TokenService tokenService, GoogleAuthService googleAuthService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
+        _googleAuthService = googleAuthService;
     }
     
     [HttpPost("register")]
@@ -134,5 +136,25 @@ public class UserController: ControllerBase
     {
         await _signInManager.SignOutAsync();
         return Ok(true);
+    }
+    
+    [HttpPost("signin-google")]
+    public async Task<IActionResult> GoogleAuth([FromBody] AuthTokenResponse tokenResponse)
+    {
+        try
+        {
+            // Validate the Google ID token received from the frontend
+            var payload = await _googleAuthService.VerifyGoogleTokenAsync(tokenResponse.Token);
+
+            // You can now use the payload to retrieve user info
+            // Example: payload.Email, payload.Name, etc.
+
+            // Return a JWT or some other custom token for your application
+            return Ok(new { Message = "Token is valid", User = payload.Email });
+        }
+        catch (Exception ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
     }
 }

@@ -4,9 +4,9 @@ using CustomUser_Auth.Helpers.ExceptionHandler;
 using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
 using dotenv.net;
-using Google.Apis.Auth.AspNetCore3;
+//using Google.Apis.Auth.AspNetCore3;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
+//using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
@@ -43,9 +43,10 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(p =>
     {
-        p.WithOrigins("*")
+        p.WithOrigins("http://localhost:5173")
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 
@@ -53,6 +54,7 @@ var connectionString = builder.Configuration.GetConnectionString("userString");
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<GoogleAuthService>();
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -69,7 +71,9 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.Zero
         };
-    });
+        o.Authority = Environment.GetEnvironmentVariable("JWT_AUTHORITY");
+        o.Audience = Environment.GetEnvironmentVariable("APP_CLIENT_ID");
+    }).AddCookie();
 
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>()
