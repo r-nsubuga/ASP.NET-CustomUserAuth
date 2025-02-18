@@ -43,9 +43,10 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(p =>
     {
-        p.WithOrigins("*")
+        p.WithOrigins()
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 
@@ -73,7 +74,7 @@ builder.Services.AddAuthentication(options =>
     }).AddCookie(op =>
     {
         op.Cookie.Name = "customAuthCookie";
-        op.Cookie.Path = "/signin-google";
+        op.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         op.Cookie.SameSite = SameSiteMode.None; 
         op.ExpireTimeSpan = TimeSpan.FromMinutes(60);
     })
@@ -81,7 +82,6 @@ builder.Services.AddAuthentication(options =>
     {
         options.ClientId = Environment.GetEnvironmentVariable("APP_CLIENT_ID");
         options.ClientSecret = Environment.GetEnvironmentVariable("APP_CLIENT_SECRET");
-        // options.CorrelationCookie.SameSite = SameSiteMode.Lax;
         options.SaveTokens = true;
     });
 
@@ -118,7 +118,7 @@ app.UseExceptionHandler("/error");
 
 app.UseCors();
 app.UseRouting();
-app.UseSession();
+//app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -3,6 +3,7 @@ using CustomUser_Auth.Dtos;
 using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -147,9 +148,9 @@ public class UserController: ControllerBase
     [HttpGet("signin-google")]
     public async Task<IActionResult> GoogleResponse()
     {
-        var authenticateResult = await HttpContext.AuthenticateAsync();
+        var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         if (!authenticateResult.Succeeded)
-            return BadRequest();
+            return BadRequest("Google Authentication Failed");
         
         var claims = authenticateResult.Principal.Identities.FirstOrDefault()?.Claims;
         var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
