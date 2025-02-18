@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CustomUser_Auth.Dtos;
 using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
@@ -149,11 +150,32 @@ public class UserController: ControllerBase
         var authenticateResult = await HttpContext.AuthenticateAsync();
         if (!authenticateResult.Succeeded)
             return BadRequest();
+        
+        var claims = authenticateResult.Principal.Identities.FirstOrDefault()?.Claims;
+        var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        var name = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+        
+        if (string.IsNullOrEmpty(email))
+            return BadRequest("Google response did not include an email");
+        
+        var existingUser = await _userManager.FindByEmailAsync(email);
+        
+        if (existingUser == null)
+        {
+            // New user: Register them
+            var user = new NormalUser()
+            {
+                UserName = email,
+                Email = email,
+                FirstName = name,
+            };
 
-        var claims = authenticateResult.Principal.Identities
-            .FirstOrDefault()?.Claims.Select(c => new { c.Type, c.Value });
-
-        return Ok(claims);
+            var result = await _userManager.CreateAsync(user);
+            if (!result.Succeeded)
+                return BadRequest("Failed to create user");
+        }
+        
+        return Ok(new { message = "Login successful"});
     }
 
     [HttpPost("logoutFromGoogleAuth")]

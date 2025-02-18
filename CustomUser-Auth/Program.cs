@@ -1,5 +1,6 @@
 using System.Text;
 using CustomUser_Auth.Data;
+using CustomUser_Auth.Helpers.ExceptionHandler;
 using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
 using dotenv.net;
@@ -7,13 +8,20 @@ using Google.Apis.Auth.AspNetCore3;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
 var root = Directory.GetCurrentDirectory();
 var dotenv = Path.Combine(root, ".env");
 DotEnv.Load(new DotEnvOptions(envFilePaths: new []{dotenv}));
+
+var logger = Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,12 +30,20 @@ var builder = WebApplication.CreateBuilder(args);
 // builder.Services.AddDbContext<UserDbContext>(options =>
 //     options.UseInMemoryDatabase("AuthDb"));
 
+builder.Services.AddLogging(logging =>
+{
+    logging.AddConsole();
+    logging.SetMinimumLevel(LogLevel.Debug);
+});
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins", p =>
+    options.AddDefaultPolicy(p =>
     {
-        p.WithOrigins()
-            .AllowCredentials()
+        p.WithOrigins("*")
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -41,7 +57,7 @@ builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-        //options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(o =>
     {
@@ -54,11 +70,19 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.Zero
         };
-    }).AddCookie()
+    }).AddCookie(op =>
+    {
+        op.Cookie.Name = "customAuthCookie";
+        op.Cookie.Path = "/signin-google";
+        op.Cookie.SameSite = SameSiteMode.None; 
+        op.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    })
     .AddGoogle(options =>
     {
         options.ClientId = Environment.GetEnvironmentVariable("APP_CLIENT_ID");
         options.ClientSecret = Environment.GetEnvironmentVariable("APP_CLIENT_SECRET");
+        // options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.SaveTokens = true;
     });
 
 builder.Services.AddAuthorization();
@@ -81,22 +105,30 @@ builder.Services.AddSwaggerGen();
 //builder.Services.AddRazorPages();
 
 var app = builder.Build();
+app.UseExceptionHandler("/error"); 
 
-app.UseCors("AllowAllOrigins");
+// app.Use(async (context, next) =>
+// {
+//     logger.Information("Before executing middleware: {Path}", context.Request.Path);
+//
+//     await next();
+//
+//     logger.Information("After executing middleware: {Path}", context.Request.Path);
+// });
 
+app.UseCors();
+app.UseRouting();
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
 
-// Configure the HTTP request pipeline.
+//Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseRouting();
-//app.UseHttpsRedirection();
-
+app.MapControllers();
 app.Run();
 
