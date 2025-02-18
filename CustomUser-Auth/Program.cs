@@ -56,7 +56,6 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
         options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(o =>
@@ -70,19 +69,6 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.Zero
         };
-    }).AddCookie(op =>
-    {
-        op.Cookie.Name = "customAuthCookie";
-        op.Cookie.Path = "/signin-google";
-        op.Cookie.SameSite = SameSiteMode.None; 
-        op.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-    })
-    .AddGoogle(options =>
-    {
-        options.ClientId = Environment.GetEnvironmentVariable("APP_CLIENT_ID");
-        options.ClientSecret = Environment.GetEnvironmentVariable("APP_CLIENT_SECRET");
-        // options.CorrelationCookie.SameSite = SameSiteMode.Lax;
-        options.SaveTokens = true;
     });
 
 builder.Services.AddAuthorization();
@@ -118,7 +104,7 @@ app.UseExceptionHandler("/error");
 
 app.UseCors();
 app.UseRouting();
-app.UseSession();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
