@@ -43,10 +43,11 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(p =>
     {
-        p.WithOrigins()
+        p.WithOrigins("http://localhost:5173")
+            .AllowCredentials()
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials();
+            ;
     });
 });
 
@@ -105,6 +106,7 @@ builder.Services.AddSwaggerGen();
 //builder.Services.AddRazorPages();
 
 var app = builder.Build();
+
 app.UseExceptionHandler("/error"); 
 
 // app.Use(async (context, next) =>
@@ -116,8 +118,8 @@ app.UseExceptionHandler("/error");
 //     logger.Information("After executing middleware: {Path}", context.Request.Path);
 // });
 
-app.UseCors();
 app.UseRouting();
+app.UseCors();
 //app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();

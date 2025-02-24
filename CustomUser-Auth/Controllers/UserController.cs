@@ -5,6 +5,7 @@ using CustomUser_Auth.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,6 +25,12 @@ public class UserController: ControllerBase
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
+    }
+    
+    [HttpOptions("loginWithGoogle")]
+    public IActionResult Options()
+    {
+        return Ok();
     }
     
     [HttpPost("register")]
@@ -144,7 +151,7 @@ public class UserController: ControllerBase
         var redirectUrl = Url.Action(nameof(GoogleResponse), "User", null, Request.Scheme);
         return Challenge(new AuthenticationProperties { RedirectUri = redirectUrl }, GoogleDefaults.AuthenticationScheme);
     }
-
+    
     [HttpGet("signin-google")]
     public async Task<IActionResult> GoogleResponse()
     {
