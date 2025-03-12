@@ -8,6 +8,7 @@ public class EmailService:IEmailService
     private string MAIL_HOST = Environment.GetEnvironmentVariable("MAIL_HOST");
     private string MAIL_ADDRESS = Environment.GetEnvironmentVariable("MAIL_ADDRESS");
     private string MAIL_PASSWORD = Environment.GetEnvironmentVariable("MAIL_PASSWORD");
+    
     public async Task SendEmailAsync(string to, string subject, string body)
     {
         var message = new MimeMessage();
