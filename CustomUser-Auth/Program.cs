@@ -71,8 +71,8 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.Zero
         };
-        o.Authority = Environment.GetEnvironmentVariable("JWT_AUTHORITY");
-        o.Audience = Environment.GetEnvironmentVariable("APP_CLIENT_ID");
+        // o.Authority = Environment.GetEnvironmentVariable("JWT_AUTHORITY");
+        // o.Audience = Environment.GetEnvironmentVariable("APP_CLIENT_ID");
     }).AddCookie();
 
 builder.Services.AddAuthorization();
