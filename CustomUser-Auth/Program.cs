@@ -1,5 +1,6 @@
 using System.Text;
 using CustomUser_Auth.Data;
+using CustomUser_Auth.Helpers.Emailing;
 using CustomUser_Auth.Helpers.ExceptionHandler;
 using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
@@ -77,15 +78,18 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<User>()
-    .AddEntityFrameworkStores<UserDbContext>();
+    .AddEntityFrameworkStores<UserDbContext>()
+    .AddDefaultTokenProviders();
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.User.RequireUniqueEmail = true;
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.AllowedForNewUsers = true;
-    options.SignIn.RequireConfirmedEmail = false;
+    options.SignIn.RequireConfirmedEmail = true;
+    options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;
 });
+builder.Services.AddTransient<IEmailService, EmailService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

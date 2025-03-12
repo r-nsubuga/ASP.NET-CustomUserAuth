@@ -1,5 +1,7 @@
+using System.Net;
 using System.Security.Claims;
 using CustomUser_Auth.Dtos;
+using CustomUser_Auth.Helpers.Emailing;
 using CustomUser_Auth.Helpers.Services;
 using CustomUser_Auth.Models;
 using Microsoft.AspNetCore.Authentication;
@@ -17,41 +19,20 @@ public class UserController: ControllerBase
     private readonly SignInManager<User> _signInManager;
     private readonly TokenService _tokenService;
     private readonly GoogleAuthService _googleAuthService;
+    private readonly IEmailService _emailService;
 
     public UserController(UserManager<User> userManager, SignInManager<User> signInManager, 
-        TokenService tokenService, GoogleAuthService googleAuthService)
+        TokenService tokenService, GoogleAuthService googleAuthService, IEmailService emailService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _tokenService = tokenService;
         _googleAuthService = googleAuthService;
-    }
-    
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterDto model)
-    {
-        if (ModelState.IsValid)
-        {
-            var user = new User
-            {
-                UserName = model.Email,
-                Email = model.Email,
-            };
-
-            var result = await _userManager.CreateAsync(user, model.Password);
-            if (result.Succeeded)
-            {
-                await _signInManager.SignInAsync(user, isPersistent: false);
-                return Ok();
-            }
-            return BadRequest(result.Errors);
-        }
-
-        return BadRequest(ModelState);
+        _emailService = emailService;
     }
 
     [HttpPost("createNormalUser")]
-    public async Task<IActionResult> CreateNormalUser([FromBody] NormalUser normalUser)
+    public async Task<IActionResult> CreateNormalUser([FromBody] RegisterDto normalUser)
     {
         if (ModelState.IsValid)
         {
@@ -61,15 +42,16 @@ public class UserController: ControllerBase
                 Email = normalUser.Email,
                 FirstName = normalUser.FirstName,
                 LastName = normalUser.LastName,
-                PhoneNumber = normalUser.PhoneNumber,
             };
-            var result = await _userManager.CreateAsync(user, normalUser.PasswordHash);
-            if (result.Succeeded)
-            {
-                await _signInManager.SignInAsync(user, isPersistent: false);
-                return Ok();
-            }
-            return BadRequest(result.Errors);
+            var result = await _userManager.CreateAsync(user, normalUser.Password);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebUtility.UrlEncode(token);
+            
+            var confirmationLink = Url.Action("ConfirmEmail", "User", new { userId = user.Id, token = token },Request.Scheme);
+            await _emailService.SendEmailAsync(user.Email, "Email Verification", confirmationLink);
+            // await _signInManager.SignInAsync(user, isPersistent: false);
+            return Ok();
         }
         return BadRequest(ModelState);
     }
@@ -156,5 +138,45 @@ public class UserController: ControllerBase
         {
             return Unauthorized(new { Message = ex.Message });
         }
+    }
+    
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail(string userId, string token)
+    {
+        if (userId == null || token == null)
+        {
+            return Problem("Token and user id are required.");
+        }
+        
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return BadRequest("User not found");
+        }
+        var decodedToken = WebUtility.UrlDecode(token);
+        
+        var result = await _userManager.ConfirmEmailAsync(user, token);
+        Console.WriteLine(result);
+        if (result.Succeeded)
+        {
+            // Email confirmed successfully
+            return Ok();
+        }
+
+        // Error during email confirmation
+        return Problem("Error");
+    }
+    [HttpPost("resend-email")]
+    public async Task<IActionResult> ResendConfirmationEmail(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is not { EmailConfirmed: false }) return Ok("Email already confirmed.");
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebUtility.UrlEncode(token);
+        var confirmationLink = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, token }, Request.Scheme);
+
+        await _emailService.SendEmailAsync(user.Email, "Email Verification", confirmationLink);
+        return Ok();
+
     }
 }
